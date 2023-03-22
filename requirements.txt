@@ -1,0 +1,11 @@
+pandas==1.5.3
+numpy==1.24.2
+scikit-learn==1.2.2
+matplotlib==3.7.1
+seaborn==0.12.2
+tqdm==4.65.0
+jupyter==1.0.0
+notebook==6.4.0
+appmode==0.8.0
+jupyter_nbextensions_configurator
+jupyter_contrib_nbextensions
