@@ -26,28 +26,29 @@ warnings.filterwarnings("ignore")
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-# If required, create a face detection pipeline using MTCNN:
-mtcnn = MTCNN(
-    image_size=160, margin=40, min_face_size=20,
-    thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=True,
-    device=device
-)
+with st.spinner('Loading the models...'):
+    # If required, create a face detection pipeline using MTCNN:
+    mtcnn = MTCNN(
+        image_size=160, margin=40, min_face_size=20,
+        thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=True,
+        device=device
+    )
 
-mtcnn2 = MTCNN(
-    image_size=160, margin=40, min_face_size=20,
-    thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=False,
-    device=device
-)
+    mtcnn2 = MTCNN(
+        image_size=160, margin=40, min_face_size=20,
+        thresholds=[0.6, 0.7, 0.7], factor=0.709, post_process=False,
+        device=device
+    )
 
-# Create an inception resnet (in eval mode):
-resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+    # Create an inception resnet (in eval mode):
+    resnet = InceptionResnetV1(pretrained='casia-webface').eval().to(device)
 
-# Define the transformation to preprocess the images
-preprocess = transforms.Compose([
-    transforms.Resize((160, 160)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-])
+    # Define the transformation to preprocess the images
+    preprocess = transforms.Compose([
+        transforms.Resize((160, 160)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
 
 def extract_features(img):
     img = img.convert('RGB')
@@ -63,18 +64,24 @@ def extract_features(img):
     return features[0].cpu().numpy()
 
 
-with open("../models/lr.p", "rb") as f:
+with open("/app/models/svm_original_casia-webface.p", "rb") as f:
     lr = pickle.load(f)
 
-img_file_buffer = st.camera_input("Take a picture")
+st.markdown("<center><h1>Know Your BMI</h1></center>", unsafe_allow_html=True)
+st.caption("<center>Click a photo and the underlying Machine Learning model will predict your BMI</center>", unsafe_allow_html=True)
+
+img_file_buffer = st.camera_input("Click a photo and the underlying Machine Learning model will predict your BMI", label_visibility="hidden")
 
 if img_file_buffer is not None:
     # To read image file buffer as a PIL Image:
     img = Image.open(img_file_buffer)
     
-    detected_image = Image.fromarray(mtcnn2(img).numpy().transpose(1, 2, 0).astype(np.uint8))
-    st.image(detected_image, caption="Detected Face")
-    
-    embeddings = extract_features(img)
-    bmi = round(lr.predict([embeddings])[0], 2)
-    st.write(f"Your BMI is {bmi}")
+    detected_face = mtcnn2(img)
+    if detected_face is None:
+        st.write("No Face Detected")
+    else:
+        detected_face = Image.fromarray(detected_face.numpy().transpose(1, 2, 0).astype(np.uint8))
+        st.image(detected_face, caption="Detected Face")
+        embeddings = extract_features(img)
+        bmi = round(lr.predict([embeddings])[0], 2) - 4
+        st.write(f"Your BMI is {bmi}")
