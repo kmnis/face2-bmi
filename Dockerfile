@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 EXPOSE 8501
 
 # Upgrade pip and install requirements
-COPY req.txt requirements.txt
+COPY requirements.txt requirements.txt
 RUN pip install -U pip
 RUN pip install -r requirements.txt
 
